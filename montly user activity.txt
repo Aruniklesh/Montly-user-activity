@@ -1,0 +1,81 @@
+type DeviceLog = {
+    deviceId: string;
+    userId: string;
+    loggedIn: Date;
+    loggedOut: Date;
+    lastOpenedAt: Date;
+};
+
+type MonthlyMetrics = {
+    loggedInUsers: Set<string>;
+    activeUsers: Set<string>;
+};
+
+function getMonthlyMetrics(logs: DeviceLog[], year: number): MonthlyMetrics[] {
+    // Initialize metrics for each month
+    const monthlyMetrics: MonthlyMetrics[] = Array.from({ length: 12 }, () => ({
+        loggedInUsers: new Set<string>(),
+        activeUsers: new Set<string>(),
+    }));
+
+    logs.forEach(log => {
+        const startMonth = log.loggedIn.getMonth(); // Month when user logged in
+        const endMonth = log.loggedOut.getMonth();  // Month when user logged out
+
+        // Check the year for both login and logout
+        const startYear = log.loggedIn.getFullYear();
+        const endYear = log.loggedOut.getFullYear();
+
+        if (startYear > year || endYear < year) return; // Skip if not in the given year
+
+        // Determine the range of months to consider
+        const start = (startYear < year) ? 0 : startMonth;
+        const end = (endYear > year) ? 11 : endMonth;
+
+        // Update metrics for each month in the range
+        for (let month = start; month <= end; month++) {
+            monthlyMetrics[month].loggedInUsers.add(log.userId);
+            if (log.lastOpenedAt.getFullYear() === year && log.lastOpenedAt.getMonth() === month) {
+                monthlyMetrics[month].activeUsers.add(log.userId);
+            }
+        }
+    });
+
+    return monthlyMetrics;
+}
+
+// Example usage
+const logs: DeviceLog[] = [
+    {
+        deviceId: 'device1',
+        userId: 'user1',
+        loggedIn: new Date('2023-01-01T00:00:00Z'),
+        loggedOut: new Date('2023-06-30T23:59:59Z'),
+        lastOpenedAt: new Date('2023-03-15T12:00:00Z'),
+    },
+    {
+        deviceId: 'device2',
+        userId: 'user2',
+        loggedIn: new Date('2023-02-01T00:00:00Z'),
+        loggedOut: new Date('2023-07-31T23:59:59Z'),
+        lastOpenedAt: new Date('2023-05-20T12:00:00Z'),
+    },
+    {
+        deviceId: 'device3',
+        userId: 'user3',
+        loggedIn: new Date('2023-08-01T00:00:00Z'),
+        loggedOut: new Date('2023-12-31T23:59:59Z'),
+        lastOpenedAt: new Date('2023-09-10T12:00:00Z'),
+    },
+];
+
+const year = 2023;
+const metrics = getMonthlyMetrics(logs, year);
+
+// Output metrics for each month
+metrics.forEach((metric, index) => {
+    console.log(`Month ${index + 1}:`);
+    console.log(`Logged-in Users: ${Array.from(metric.loggedInUsers).join(', ')}`);
+    console.log(`Active Users: ${Array.from(metric.activeUsers).join(', ')}`);
+});
+
